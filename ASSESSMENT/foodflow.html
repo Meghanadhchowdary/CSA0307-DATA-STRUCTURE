@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodFlow — Restaurant Chain Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2C231C;
+    --paper:#F6F1E4;
+    --paper-2:#EDE5D0;
+    --saffron:#E3A72B;
+    --tomato:#C1442D;
+    --sage:#5F7F58;
+    --line: rgba(44,35,28,0.18);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+  }
+  h1,h2,h3,.brand{font-family:'Fraunces', serif;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  /* ---------- LOGIN ---------- */
+  #login-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .ticket{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    position:relative;
+    padding:36px 32px;
+  }
+  .ticket::before{
+    content:"";
+    position:absolute; top:-9px; left:24px; right:24px; height:18px;
+    background-image: radial-gradient(circle 5px, var(--paper) 5px, transparent 5.5px);
+    background-size: 22px 18px;
+    background-repeat: repeat-x;
+  }
+  #login-screen .ticket{width:100%; max-width:380px;}
+  .brand-row{display:flex; align-items:baseline; gap:10px; margin-bottom:4px;}
+  .brand-row span.mark{font-size:28px;}
+  .brand{font-size:26px; font-weight:700;}
+  .sub{font-size:13px; color:#5c5148; margin-bottom:28px; letter-spacing:.02em;}
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12px; color:#6b5f53; margin-bottom:6px;}
+  .field input{
+    width:100%; padding:10px 12px; border:1px solid var(--line);
+    background:var(--paper); font-family:'Inter'; font-size:14px; color:var(--ink);
+  }
+  .field input:focus{outline:2px solid var(--saffron); outline-offset:1px;}
+  .checkbox-row{display:flex; align-items:center; gap:7px; font-size:12.5px; margin-bottom:22px; color:#5c5148;}
+  .btn{
+    display:inline-block; border:none; cursor:pointer;
+    font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:13px;
+    letter-spacing:.04em; padding:12px 20px;
+  }
+  .btn-primary{background:var(--tomato); color:#fff; width:100%;}
+  .btn-primary:hover{background:#a8391f;}
+  .switch-line{text-align:center; margin-top:18px; font-size:12.5px; color:#5c5148;}
+  .switch-line a{color:var(--tomato); cursor:pointer; text-decoration:underline;}
+  .hidden{display:none !important;}
+  .error-msg{color:var(--tomato); font-size:12px; margin-top:-8px; margin-bottom:14px; min-height:14px;}
+
+  /* ---------- APP SHELL ---------- */
+  #app{display:none; min-height:100vh; flex-direction:column;}
+  header.topbar{
+    background:var(--ink); color:var(--paper);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 24px; position:sticky; top:0; z-index:10;
+  }
+  header.topbar .brand{color:var(--paper); font-size:20px;}
+  header.topbar .brand span.mark{margin-right:6px;}
+  .user-chip{font-size:12.5px; display:flex; align-items:center; gap:10px;}
+  .user-chip button{background:none; border:1px solid rgba(246,241,228,.35); color:var(--paper); font-size:11px; padding:6px 10px; cursor:pointer; font-family:'IBM Plex Mono';}
+
+  nav.tabs{
+    display:flex; gap:2px; background:var(--paper-2); border-bottom:1px solid var(--line);
+    overflow-x:auto; padding:0 16px;
+  }
+  nav.tabs button{
+    background:none; border:none; cursor:pointer; padding:14px 16px;
+    font-family:'Inter'; font-size:13px; font-weight:500; color:#6b5f53;
+    border-bottom:2px solid transparent; white-space:nowrap;
+  }
+  nav.tabs button.active{color:var(--ink); border-bottom-color:var(--tomato); font-weight:600;}
+
+  main{flex:1; padding:28px 24px 60px; max-width:1080px; margin:0 auto; width:100%;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  section.block{margin-bottom:40px;}
+  section.block h2{font-size:22px; margin-bottom:4px;}
+  .block-sub{font-size:13px; color:#6b5f53; margin-bottom:20px;}
+
+  /* stat strip */
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:36px;}
+  .stat-ticket{background:var(--paper-2); border:1px solid var(--line); padding:16px 18px; position:relative;}
+  .stat-ticket .num{font-family:'Fraunces'; font-size:30px; font-weight:700; line-height:1;}
+  .stat-ticket .lbl{font-size:11.5px; color:#6b5f53; margin-top:6px;}
+  .stat-ticket .icon{position:absolute; top:14px; right:16px; font-size:18px; opacity:.55;}
+
+  /* menu grid */
+  .menu-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:16px;}
+  .dish{background:var(--paper-2); border:1px solid var(--line); padding:18px; display:flex; flex-direction:column; gap:6px;}
+  .dish .emoji{font-size:30px;}
+  .dish h3{font-size:16px; margin-top:2px;}
+  .dish .cat{font-size:11px; color:#6b5f53; text-transform:uppercase; letter-spacing:.05em;}
+  .dish .price{font-family:'IBM Plex Mono'; font-weight:600; font-size:15px; margin-top:4px;}
+  .dish button{margin-top:8px; background:var(--sage); color:#fff; border:none; padding:8px 10px; font-size:12px; cursor:pointer; font-family:'Inter'; font-weight:600;}
+  .dish button:hover{background:#4d6a47;}
+
+  /* cart / billing */
+  .cart-wrap{display:grid; grid-template-columns:1.4fr 1fr; gap:24px;}
+  @media(max-width:760px){.cart-wrap{grid-template-columns:1fr;}}
+  .cart-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px dashed var(--line); font-size:13.5px;}
+  .cart-row .qty-btn{background:var(--paper); border:1px solid var(--line); width:22px; height:22px; cursor:pointer; font-family:'IBM Plex Mono';}
+  .empty-note{font-size:13px; color:#8a7d6e; padding:14px 0;}
+  .bill-ticket{background:var(--paper-2); border:1px solid var(--line); padding:20px;}
+  .bill-line{display:flex; justify-content:space-between; font-size:13.5px; padding:6px 0;}
+  .bill-line.total{border-top:1px solid var(--ink); margin-top:8px; padding-top:12px; font-weight:700; font-size:16px; font-family:'IBM Plex Mono';}
+  .btn-place{width:100%; margin-top:16px; background:var(--tomato); color:#fff;}
+  .btn-place:disabled{background:#c9bfae; cursor:not-allowed;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#6b5f53; padding:8px 10px; border-bottom:1px solid var(--ink);}
+  tbody td{padding:10px; border-bottom:1px solid var(--line);}
+  tbody tr:hover{background:var(--paper-2);}
+  .status-tag{font-family:'IBM Plex Mono'; font-size:10.5px; padding:3px 8px; letter-spacing:.03em; display:inline-block; transform:rotate(-2deg); border:1px solid currentColor;}
+  .status-tag.wait{color:var(--saffron);}
+  .status-tag.prep{color:var(--tomato);}
+  .status-tag.done{color:var(--sage);}
+  .status-tag.low{color:var(--tomato);}
+  .status-tag.ok{color:var(--sage);}
+
+  .kitchen-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px;}
+  .kitchen-card{background:var(--paper-2); border:1px solid var(--line); padding:16px;}
+  .kitchen-card .oid{font-family:'IBM Plex Mono'; font-size:12px; color:#6b5f53;}
+  .kitchen-card ul{margin:8px 0 12px 18px; font-size:13px;}
+  .kitchen-card select{width:100%; padding:7px; border:1px solid var(--line); background:var(--paper); font-family:'Inter'; font-size:12.5px;}
+  .empty-kitchen{font-size:13px; color:#8a7d6e;}
+
+  .inv-form{background:var(--paper-2); border:1px solid var(--line); padding:18px; margin-bottom:20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; align-items:end;}
+  .inv-form .field{margin-bottom:0;}
+  .inv-form button{grid-column:span 1; height:40px;}
+
+  .toolbar{display:flex; gap:10px; margin-bottom:16px;}
+  .toolbar button{background:var(--ink); color:var(--paper); border:none; padding:9px 14px; font-size:12.5px; cursor:pointer; font-family:'Inter'; font-weight:600;}
+
+  .deliver-btns{display:flex; gap:6px;}
+  .deliver-btns button{border:1px solid var(--line); background:var(--paper); padding:5px 9px; font-size:11px; cursor:pointer;}
+  .deliver-btns button.on{background:var(--sage); color:#fff; border-color:var(--sage);}
+
+  .toast{
+    position:fixed; bottom:20px; right:20px; background:var(--ink); color:var(--paper);
+    padding:12px 18px; font-size:13px; font-family:'IBM Plex Mono'; opacity:0; transform:translateY(10px);
+    transition:all .25s ease; pointer-events:none; z-index:50;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login-screen">
+  <div class="ticket" id="login-box">
+    <div class="brand-row"><span class="mark">🍽️</span><span class="brand">FoodFlow</span></div>
+    <div class="sub">Restaurant Chain Management System</div>
+
+    <form id="login-form">
+      <div class="field"><label>User ID</label><input id="li-user" type="text" required></div>
+      <div class="field"><label>Password</label><input id="li-pass" type="password" required></div>
+      <div class="checkbox-row"><input type="checkbox" id="li-show"><label for="li-show">Show password</label></div>
+      <div class="error-msg" id="login-error"></div>
+      <button class="btn btn-primary" type="submit">LOGIN</button>
+    </form>
+    <div class="switch-line">Don't have an account? <a id="go-signup">CREATE ACCOUNT</a></div>
+  </div>
+
+  <div class="ticket hidden" id="signup-box">
+    <div class="brand-row"><span class="mark">🍽️</span><span class="brand">FoodFlow</span></div>
+    <div class="sub">Create your account</div>
+    <form id="signup-form">
+      <div class="field"><label>Create User ID</label><input id="su-user" type="text" required></div>
+      <div class="field"><label>Create Password</label><input id="su-pass" type="password" required></div>
+      <div class="field"><label>Confirm Password</label><input id="su-pass2" type="password" required></div>
+      <div class="checkbox-row"><input type="checkbox" id="su-show"><label for="su-show">Show password</label></div>
+      <div class="error-msg" id="signup-error"></div>
+      <button class="btn btn-primary" type="submit">CREATE ACCOUNT</button>
+    </form>
+    <div class="switch-line">Already have an account? <a id="go-login">LOGIN</a></div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="mark">🍽️</span>FoodFlow</div>
+    <div class="user-chip"><span id="user-name">👤 User</span><button id="logout-btn">LOGOUT</button></div>
+  </header>
+
+  <nav class="tabs">
+    <button data-view="dashboard" class="active">📊 Dashboard</button>
+    <button data-view="menu">🍔 Menu &amp; Pricing</button>
+    <button data-view="orders">🛒 Orders &amp; Billing</button>
+    <button data-view="kitchen">👨‍🍳 Kitchen Queue</button>
+    <button data-view="inventory">📦 Inventory</button>
+    <button data-view="admin">👨‍💼 Admin</button>
+    <button data-view="delivery">🚚 Delivery</button>
+  </nav>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <section class="block">
+        <h2>Restaurant Dashboard</h2>
+        <div class="block-sub">Menu → Order → Billing → Kitchen → Inventory → Delivery</div>
+        <div class="stats">
+          <div class="stat-ticket"><span class="icon">🛒</span><div class="num" id="stat-orders">0</div><div class="lbl">Total Orders</div></div>
+          <div class="stat-ticket"><span class="icon">💰</span><div class="num" id="stat-revenue">₹0</div><div class="lbl">Total Revenue</div></div>
+          <div class="stat-ticket"><span class="icon">🚚</span><div class="num" id="stat-delivered">0</div><div class="lbl">Delivered</div></div>
+          <div class="stat-ticket"><span class="icon">📦</span><div class="num" id="stat-lowstock">0</div><div class="lbl">Low Stock</div></div>
+        </div>
+        <p style="font-size:14px; color:#5c5148; max-width:520px;">Welcome to FoodFlow — a restaurant chain menu, order, kitchen, inventory, admin and delivery management system. Use the tabs above to move through the workflow.</p>
+      </section>
+    </div>
+
+    <!-- MENU -->
+    <div class="view" id="view-menu">
+      <section class="block">
+        <div class="toolbar"><h2 style="flex:1">🍔 Menu &amp; Pricing</h2><button id="add-item-btn">+ Add Menu Item</button></div>
+        <div class="menu-grid" id="menu-grid"></div>
+      </section>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="view" id="view-orders">
+      <section class="block">
+        <h2>🛒 Order Placement</h2>
+        <div class="cart-wrap" style="margin-top:16px;">
+          <div>
+            <div id="cart-list"></div>
+          </div>
+          <div>
+            <div class="bill-ticket">
+              <h3 style="font-size:15px; margin-bottom:12px;">💰 Billing</h3>
+              <div class="bill-line"><span>Subtotal</span><span class="mono" id="bill-sub">₹0.00</span></div>
+              <div class="bill-line"><span>GST 5%</span><span class="mono" id="bill-gst">₹0.00</span></div>
+              <div class="bill-line total"><span>Total</span><span class="mono" id="bill-total">₹0.00</span></div>
+              <button class="btn btn-place" id="place-order-btn" disabled>PLACE ORDER</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="block">
+        <h2 style="font-size:18px;">Recent Orders</h2>
+        <table><thead><tr><th>Order ID</th><th>Items</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody id="recent-orders-body"><tr><td colspan="4" class="empty-note">No orders yet.</td></tr></tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- KITCHEN -->
+    <div class="view" id="view-kitchen">
+      <section class="block">
+        <h2>👨‍🍳 Kitchen Queue Management</h2>
+        <div class="block-sub">Move each ticket through Waiting → Preparing → Ready</div>
+        <div class="kitchen-grid" id="kitchen-grid"><p class="empty-kitchen">No active tickets.</p></div>
+      </section>
+    </div>
+
+    <!-- INVENTORY -->
+    <div class="view" id="view-inventory">
+      <section class="block">
+        <div class="toolbar"><h2 style="flex:1">📦 Inventory Depletion Module</h2><button id="add-stock-btn">+ Add / Update Stock</button></div>
+        <div class="stats">
+          <div class="stat-ticket"><div class="num" id="inv-total">0</div><div class="lbl">📦 Total Items</div></div>
+          <div class="stat-ticket"><div class="num" id="inv-available">0</div><div class="lbl">🟢 Available</div></div>
+          <div class="stat-ticket"><div class="num" id="inv-low">0</div><div class="lbl">🔴 Low Stock</div></div>
+        </div>
+        <div class="inv-form hidden" id="inv-form">
+          <div class="field"><label>Ingredient</label><input id="inv-name"></div>
+          <div class="field"><label>Current Stock</label><input id="inv-qty" type="number" min="0"></div>
+          <div class="field"><label>Unit</label><input id="inv-unit" placeholder="kg / pcs / L"></div>
+          <div class="field"><label>Minimum</label><input id="inv-min" type="number" min="0"></div>
+          <button class="btn btn-primary" id="inv-save">💾 Save Stock</button>
+        </div>
+        <table><thead><tr><th>Ingredient</th><th>Current Stock</th><th>Unit</th><th>Minimum</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="inventory-body"><tr><td colspan="6" class="empty-note">No stock items yet.</td></tr></tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="view" id="view-admin">
+      <section class="block">
+        <h2>👨‍💼 Admin — Order Management</h2>
+        <div class="stats">
+          <div class="stat-ticket"><div class="num" id="ad-total">0</div><div class="lbl">📋 Total Orders</div></div>
+          <div class="stat-ticket"><div class="num" id="ad-delivered">0</div><div class="lbl">🚚 Delivered</div></div>
+          <div class="stat-ticket"><div class="num" id="ad-notdelivered">0</div><div class="lbl">⏳ Not Delivered</div></div>
+        </div>
+        <h2 style="font-size:18px;">All Orders</h2>
+        <table><thead><tr><th>Order ID</th><th>Items</th><th>Amount</th><th>Order Status</th><th>Delivery Status</th></tr></thead>
+          <tbody id="admin-orders-body"><tr><td colspan="5" class="empty-note">No orders yet.</td></tr></tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- DELIVERY -->
+    <div class="view" id="view-delivery">
+      <section class="block">
+        <h2>🚚 Delivery Management</h2>
+        <div class="block-sub">Manually mark each order as Delivered or Not Delivered.</div>
+        <table><thead><tr><th>Order ID</th><th>Items</th><th>Amount</th><th>Delivery Status</th><th>Action</th></tr></thead>
+          <tbody id="delivery-body"><tr><td colspan="5" class="empty-note">No orders yet.</td></tr></tbody>
+        </table>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   FoodFlow — in-memory demo state (no backend, no storage APIs)
+   ============================================================ */
+const state = {
+  users: [],           // {id, pass}
+  currentUser: null,
+  menu: [
+    {id:1, name:"Margherita Pizza", cat:"Pizza",    price:249, emoji:"🍕"},
+    {id:2, name:"Chicken Burger",   cat:"Burger",   price:199, emoji:"🍔"},
+    {id:3, name:"Italian Pasta",    cat:"Pasta",    price:179, emoji:"🍝"},
+    {id:4, name:"Chicken Biryani",  cat:"Indian",   price:229, emoji:"🍗"},
+    {id:5, name:"Veg Salad",        cat:"Healthy",  price:129, emoji:"🥗"},
+    {id:6, name:"Fresh Juice",      cat:"Beverage", price:99,  emoji:"🥤"},
+  ],
+  cart: [],             // {menuId, qty}
+  orders: [],           // {id, items:[{name,qty,price}], amount, kitchenStatus, delivered}
+  inventory: [],         // {id, name, qty, unit, min}
+  nextMenuId: 7,
+  nextOrderId: 1001,
+  nextInvId: 1,
+};
+
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function money(n){ return '₹' + Number(n).toFixed(2); }
+
+/* ---------------- AUTH ---------------- */
+$('#go-signup').onclick = () => { $('#login-box').classList.add('hidden'); $('#signup-box').classList.remove('hidden'); };
+$('#go-login').onclick  = () => { $('#signup-box').classList.add('hidden'); $('#login-box').classList.remove('hidden'); };
+$('#li-show').onchange  = e => $('#li-pass').type = e.target.checked ? 'text' : 'password';
+$('#su-show').onchange  = e => { $('#su-pass').type = $('#su-pass2').type = e.target.checked ? 'text' : 'password'; };
+
+$('#signup-form').onsubmit = e => {
+  e.preventDefault();
+  const id = $('#su-user').value.trim(), p1 = $('#su-pass').value, p2 = $('#su-pass2').value;
+  const err = $('#signup-error'); err.textContent = '';
+  if(p1 !== p2){ err.textContent = 'Passwords do not match.'; return; }
+  if(state.users.some(u=>u.id===id)){ err.textContent = 'User ID already exists.'; return; }
+  state.users.push({id, pass:p1});
+  toast('Account created — please log in');
+  $('#signup-form').reset();
+  $('#signup-box').classList.add('hidden'); $('#login-box').classList.remove('hidden');
+};
+
+$('#login-form').onsubmit = e => {
+  e.preventDefault();
+  const id = $('#li-user').value.trim(), pass = $('#li-pass').value;
+  const err = $('#login-error'); err.textContent = '';
+  let user = state.users.find(u=>u.id===id && u.pass===pass);
+  if(!user && !state.users.some(u=>u.id===id)){
+    // demo convenience: auto-register on first login
+    user = {id, pass};
+    state.users.push(user);
+  } else if(!user){
+    err.textContent = 'Incorrect password.'; return;
+  }
+  state.currentUser = user;
+  $('#user-name').textContent = '👤 ' + user.id;
+  $('#login-screen').style.display = 'none';
+  $('#app').style.display = 'flex';
+  renderAll();
+};
+
+$('#logout-btn').onclick = () => {
+  state.currentUser = null;
+  $('#app').style.display = 'none';
+  $('#login-screen').style.display = 'flex';
+  $('#login-form').reset();
+};
+
+/* ---------------- TAB NAV ---------------- */
+$$('nav.tabs button').forEach(btn=>{
+  btn.onclick = () => {
+    $$('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    $$('.view').forEach(v=>v.classList.remove('active'));
+    $('#view-' + btn.dataset.view).classList.add('active');
+  };
+});
+
+/* ---------------- MENU ---------------- */
+function renderMenu(){
+  const grid = $('#menu-grid');
+  grid.innerHTML = '';
+  state.menu.forEach(item=>{
+    const el = document.createElement('div');
+    el.className = 'dish';
+    el.innerHTML = `
+      <div class="emoji">${item.emoji}</div>
+      <div class="cat">${item.cat}</div>
+      <h3>${item.name}</h3>
+      <div class="price mono">${money(item.price)}</div>
+      <button data-id="${item.id}">Add to Order</button>`;
+    el.querySelector('button').onclick = () => addToCart(item.id);
+    grid.appendChild(el);
+  });
+}
+$('#add-item-btn').onclick = () => {
+  const name = prompt('Dish name:'); if(!name) return;
+  const price = Number(prompt('Price (₹):', '199')); if(!price) return;
+  const cat = prompt('Category:', 'Special') || 'Special';
+  state.menu.push({id: state.nextMenuId++, name, cat, price, emoji:'🍽️'});
+  renderMenu();
+  toast('Menu item added');
+};
+
+/* ---------------- CART / ORDERS ---------------- */
+function addToCart(menuId){
+  const row = state.cart.find(c=>c.menuId===menuId);
+  if(row) row.qty++; else state.cart.push({menuId, qty:1});
+  renderCart();
+  toast('Added to order');
+}
+function changeQty(menuId, delta){
+  const row = state.cart.find(c=>c.menuId===menuId);
+  if(!row) return;
+  row.qty += delta;
+  if(row.qty <= 0) state.cart = state.cart.filter(c=>c.menuId!==menuId);
+  renderCart();
+}
+function cartTotals(){
+  let sub = 0;
+  state.cart.forEach(c=>{
+    const dish = state.menu.find(m=>m.id===c.menuId);
+    sub += dish.price * c.qty;
+  });
+  const gst = sub * 0.05;
+  return {sub, gst, total: sub+gst};
+}
+function renderCart(){
+  const list = $('#cart-list');
+  if(state.cart.length === 0){
+    list.innerHTML = '<p class="empty-note">Your cart is empty.</p>';
+  } else {
+    list.innerHTML = '';
+    state.cart.forEach(c=>{
+      const dish = state.menu.find(m=>m.id===c.menuId);
+      const row = document.createElement('div');
+      row.className = 'cart-row';
+      row.innerHTML = `
+        <span>${dish.emoji} ${dish.name}</span>
+        <span style="display:flex; align-items:center; gap:8px;">
+          <button class="qty-btn" data-d="-1">–</button>
+          <span class="mono">${c.qty}</span>
+          <button class="qty-btn" data-d="1">+</button>
+          <span class="mono" style="min-width:70px; text-align:right;">${money(dish.price*c.qty)}</span>
+        </span>`;
+      row.querySelectorAll('.qty-btn').forEach(b=>{
+        b.onclick = () => changeQty(c.menuId, Number(b.dataset.d));
+      });
+      list.appendChild(row);
+    });
+  }
+  const {sub, gst, total} = cartTotals();
+  $('#bill-sub').textContent = money(sub);
+  $('#bill-gst').textContent = money(gst);
+  $('#bill-total').textContent = money(total);
+  $('#place-order-btn').disabled = state.cart.length === 0;
+}
+$('#place-order-btn').onclick = () => {
+  if(state.cart.length === 0) return;
+  const {total} = cartTotals();
+  const items = state.cart.map(c=>{
+    const dish = state.menu.find(m=>m.id===c.menuId);
+    return {name: dish.name, qty: c.qty, price: dish.price};
+  });
+  state.orders.push({
+    id: state.nextOrderId++,
+    items, amount: total,
+    kitchenStatus: 'Waiting', delivered: false,
+  });
+  state.cart = [];
+  renderCart();
+  renderAll();
+  toast('Order placed');
+};
+
+function orderItemsLabel(order){
+  return order.items.map(i=>`${i.name} ×${i.qty}`).join(', ');
+}
+
+function renderRecentOrders(){
+  const body = $('#recent-orders-body');
+  if(state.orders.length === 0){
+    body.innerHTML = '<tr><td colspan="4" class="empty-note">No orders yet.</td></tr>';
+    return;
+  }
+  body.innerHTML = '';
+  [...state.orders].reverse().slice(0,8).forEach(o=>{
+    const tr = document.createElement('tr');
+    const tagClass = o.kitchenStatus === 'Ready' ? 'done' : (o.kitchenStatus === 'Preparing' ? 'prep' : 'wait');
+    tr.innerHTML = `<td class="mono">#${o.id}</td><td>${orderItemsLabel(o)}</td><td class="mono">${money(o.amount)}</td>
+      <td><span class="status-tag ${tagClass}">${o.kitchenStatus}</span></td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* ---------------- KITCHEN ---------------- */
+function renderKitchen(){
+  const grid = $('#kitchen-grid');
+  const active = state.orders.filter(o=>o.kitchenStatus !== 'Ready' || !o.delivered);
+  if(active.length === 0){ grid.innerHTML = '<p class="empty-kitchen">No active tickets.</p>'; return; }
+  grid.innerHTML = '';
+  active.forEach(o=>{
+    const card = document.createElement('div');
+    card.className = 'kitchen-card';
+    card.innerHTML = `
+      <div class="oid">TICKET #${o.id}</div>
+      <ul>${o.items.map(i=>`<li>${i.name} ×${i.qty}</li>`).join('')}</ul>
+      <select data-id="${o.id}">
+        <option ${o.kitchenStatus==='Waiting'?'selected':''}>Waiting</option>
+        <option ${o.kitchenStatus==='Preparing'?'selected':''}>Preparing</option>
+        <option ${o.kitchenStatus==='Ready'?'selected':''}>Ready</option>
+      </select>`;
+    card.querySelector('select').onchange = e => {
+      o.kitchenStatus = e.target.value;
+      renderAll();
+    };
+    grid.appendChild(card);
+  });
+}
+
+/* ---------------- INVENTORY ---------------- */
+$('#add-stock-btn').onclick = () => $('#inv-form').classList.toggle('hidden');
+$('#inv-save').onclick = () => {
+  const name = $('#inv-name').value.trim();
+  const qty = Number($('#inv-qty').value);
+  const unit = $('#inv-unit').value.trim() || 'pcs';
+  const min = Number($('#inv-min').value) || 0;
+  if(!name){ toast('Enter an ingredient name'); return; }
+  state.inventory.push({id: state.nextInvId++, name, qty, unit, min});
+  $('#inv-name').value=''; $('#inv-qty').value=''; $('#inv-unit').value=''; $('#inv-min').value='';
+  $('#inv-form').classList.add('hidden');
+  renderAll();
+  toast('Stock saved');
+};
+function removeInv(id){
+  state.inventory = state.inventory.filter(i=>i.id!==id);
+  renderAll();
+}
+function renderInventory(){
+  const body = $('#inventory-body');
+  if(state.inventory.length === 0){
+    body.innerHTML = '<tr><td colspan="6" class="empty-note">No stock items yet.</td></tr>';
+  } else {
+    body.innerHTML = '';
+    state.inventory.forEach(i=>{
+      const low = i.qty <= i.min;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i.name}</td><td class="mono">${i.qty}</td><td>${i.unit}</td><td class="mono">${i.min}</td>
+        <td><span class="status-tag ${low?'low':'ok'}">${low?'Low Stock':'Available'}</span></td>
+        <td><button class="qty-btn" style="padding:5px 9px;">Remove</button></td>`;
+      tr.querySelector('button').onclick = () => removeInv(i.id);
+      body.appendChild(tr);
+    });
+  }
+  $('#inv-total').textContent = state.inventory.length;
+  $('#inv-available').textContent = state.inventory.filter(i=>i.qty > i.min).length;
+  const low = state.inventory.filter(i=>i.qty <= i.min).length;
+  $('#inv-low').textContent = low;
+  $('#stat-lowstock').textContent = low;
+}
+
+/* ---------------- ADMIN ---------------- */
+function renderAdmin(){
+  const body = $('#admin-orders-body');
+  if(state.orders.length === 0){
+    body.innerHTML = '<tr><td colspan="5" class="empty-note">No orders yet.</td></tr>';
+  } else {
+    body.innerHTML = '';
+    [...state.orders].reverse().forEach(o=>{
+      const tagClass = o.kitchenStatus === 'Ready' ? 'done' : (o.kitchenStatus === 'Preparing' ? 'prep' : 'wait');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="mono">#${o.id}</td><td>${orderItemsLabel(o)}</td><td class="mono">${money(o.amount)}</td>
+        <td><span class="status-tag ${tagClass}">${o.kitchenStatus}</span></td>
+        <td><span class="status-tag ${o.delivered?'done':'wait'}">${o.delivered?'Delivered':'Not Delivered'}</span></td>`;
+      body.appendChild(tr);
+    });
+  }
+  $('#ad-total').textContent = state.orders.length;
+  const delivered = state.orders.filter(o=>o.delivered).length;
+  $('#ad-delivered').textContent = delivered;
+  $('#ad-notdelivered').textContent = state.orders.length - delivered;
+}
+
+/* ---------------- DELIVERY ---------------- */
+function renderDelivery(){
+  const body = $('#delivery-body');
+  if(state.orders.length === 0){
+    body.innerHTML = '<tr><td colspan="5" class="empty-note">No orders yet.</td></tr>';
+    return;
+  }
+  body.innerHTML = '';
+  [...state.orders].reverse().forEach(o=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="mono">#${o.id}</td><td>${orderItemsLabel(o)}</td><td class="mono">${money(o.amount)}</td>
+      <td><span class="status-tag ${o.delivered?'done':'wait'}">${o.delivered?'Delivered':'Not Delivered'}</span></td>
+      <td class="deliver-btns">
+        <button class="d-btn ${o.delivered?'on':''}" data-v="1">Delivered</button>
+        <button class="d-btn ${!o.delivered?'on':''}" data-v="0">Not Delivered</button>
+      </td>`;
+    tr.querySelectorAll('.d-btn').forEach(b=>{
+      b.onclick = () => { o.delivered = b.dataset.v === '1'; renderAll(); };
+    });
+    body.appendChild(tr);
+  });
+}
+
+/* ---------------- DASHBOARD STATS ---------------- */
+function renderDashboard(){
+  $('#stat-orders').textContent = state.orders.length;
+  const revenue = state.orders.reduce((s,o)=>s+o.amount, 0);
+  $('#stat-revenue').textContent = '₹' + revenue.toFixed(0);
+  $('#stat-delivered').textContent = state.orders.filter(o=>o.delivered).length;
+}
+
+/* ---------------- MASTER RENDER ---------------- */
+function renderAll(){
+  renderDashboard();
+  renderMenu();
+  renderCart();
+  renderRecentOrders();
+  renderKitchen();
+  renderInventory();
+  renderAdmin();
+  renderDelivery();
+}
+</script>
+</body>
+</html>
